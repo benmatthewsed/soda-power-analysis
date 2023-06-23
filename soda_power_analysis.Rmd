@@ -1,10 +1,24 @@
+---
+title: "SODA Power Analysis"
+author: "Ben Matthews"
+date: "2023-06-23"
+output: pdf_document
+---
+
+## Set up
+
+
+
+```{r}
 library(tidyverse)
-library(sandwich)
-library(lmtest)
 source(here::here("script", "xx-functions.R"))
 set.seed(nchar("soda power analysis") ^ 3)
 
+```
 
+
+
+```{r}
 # define parameters
 
 soda_effect_size <- 0.1
@@ -35,13 +49,13 @@ id_effect_size <- 1
 intervention_effect <- -1 
 # this is change over time
 # this is a very large effect size
+```
+
+We can generate data with the following function  (see xx-functions.R)
 
 
-# we can generate data with the following function
-# (see xx-functions.R)
 
-
-
+```{r}
 tmp <- 
 gen_soda_data(
   soda_effect_size = soda_effect_size,  
@@ -52,29 +66,25 @@ gen_soda_data(
   id_effect_size = 1,
   intervention_effect = -0.5
 )
+```
 
-# this simulates a t1 soda score from the
-# binomial distribution based on the cluster and individual
-# effects
-# then simulates a t2 soda score from the same distribution
-# using the same cluster and individual effects, plus
-# a small effect of the t1 cluster score
+This simulates a t1 soda score from the binomial distribution based on the cluster and individual effects then simulates a t2 soda score from the same distribution using the same cluster and individual effects, plus a small effect of the t1 cluster score.
 
-# we then only keep the proportion of the t2 data specified
-# by miss_prop. this missing probability is uncorrelated with
-# any other factors
+We then only keep the proportion of the t2 data specified by miss_prop. this missing probability is uncorrelated with any other factors.
 
+As a result soda at t1 and t2 are correlated:
 
+```{r}
 cor(tmp |> filter(time == 0) |> pull(soda),
     tmp |> filter(time == 1) |> pull(soda),
     use = "complete.obs")
+```
 
-# as a result soda at t1 and t2 are correlated
+## P-values
 
+For the analysis model we use:
 
-
-# for the analysis model we use 
-
+```{r}
 
 glm_mod <- 
   tmp |> 
@@ -84,9 +94,11 @@ glm_mod <-
 
 broom::tidy(glm_mod)$p.value[[2]]
 
-# this just models SODA as a count variable
-# we don't account for clustering within individuals
-# within this model. we could do using 
+```
+
+This just models SODA as a count variable. We don't account for clustering within individuals within this model. we could do using:
+
+```{r}
 
 glmer_mod <- 
   tmp |> 
@@ -96,21 +108,19 @@ glmer_mod <-
 
 broom.mixed::tidy(glmer_mod)$p.value[[2]]
 
-# this actually gives more precise estimates
-# possibly because the data were generated with an
-# individual random effect?
-# as a result I go for the more conservative model
+```
 
+This actually gives more precise estimates, possibly because the data were generated with an individual random effect?
 
+As a result I go for the more conservative model.
 
-# estimate effect sizes ---------------------------------------------------
+## Effect sizes
 
-# we can calculate some example effect sizes
-# to see what might be plausible results
-# I try -0.1, -0.25, -0.5 and -1
+We can calculate some example effect sizes to see what might be plausible results. I try -0.1, -0.25, -0.5 and -1:
 
+### Effect size -0.1
 
-
+```{r}
 sims_0.1 <- 
 tibble(
   sim_n = seq(1:1000)
@@ -129,15 +139,20 @@ tibble(
 plot_effect_size(sims_0.1)
 
 calc_group_change(sims_0.1)
-  
+```
 
-# effect size of -0.1 would give ~20% in group 2 down to 1
-# around 22% in group 3 down to 2 or 1
-# and around 50% of people in group 4 dropping down
-# note that some will also go up from group 1 to group 2 etc.
-# and an average difference of around 0.4 points
+Effect size of -0.1 would give:
 
+- ~20% in group 2 down to 1
+- around 22% in group 3 down to 2 or 1
+- around 50% of people in group 4 dropping down
+- and an average difference of around 0.4 points
 
+Note that some will also go up from group 1 to group 2 etc.
+
+### Effect size -0.25
+
+```{r}
 sims_0.25 <- 
   tibble(
     sim_n = seq(1:1000)
@@ -155,15 +170,20 @@ sims_0.25 <-
 plot_effect_size(sims_0.25)
 
 calc_group_change(sims_0.25)
+```
 
 
+Effect size of -0.25 would give:
 
-# effect size of -0.25 would give ~27% in group 2 down to 1
-# around 30% in group 3 down to 2 or 1
-# and around 60% of people in group 4 dropping down
-# and an average difference of around 0.8 points
+- ~27% in group 2 down to 1
+- around 30% in group 3 down to 2 or 1
+- and around 60% of people in group 4 dropping down
+- and an average difference of around 0.8 points
 
 
+### Effect size -0.5
+
+```{r}
 sims_0.5 <- 
   tibble(
     sim_n = seq(1:1000)
@@ -181,16 +201,20 @@ sims_0.5 <-
 plot_effect_size(sims_0.5)
 
 calc_group_change(sims_0.5)
+```
 
 
+Effect size of -0.5 would give:
 
-# effect size of -0.5 would give ~39% in group 2 down to 1
-# around 42% in group 3 down to 2 or 1
-# and around 70% of people in group 4 dropping down
-# and an average difference of around 1.7 points
+- ~39% in group 2 down to 1
+- around 42% in group 3 down to 2 or 1
+- and around 70% of people in group 4 dropping down
+- and an average difference of around 1.7 points
 
 
+### Effect size -1
 
+```{r}
 sims_1 <- 
   tibble(
     sim_n = seq(1:1000)
@@ -209,17 +233,24 @@ sims_1 <-
 plot_effect_size(sims_1)
 
 calc_group_change(sims_1)
-
-# effect size of -1 would give ~60% in group 2 down to 1
-# around 70% in group 3 down to 2 or 1
-# and around 87% of people in group 4 dropping down
-# and around 3.3 points difference on average
+```
 
 
+Effect size of -1 would give:
+
+- ~60% in group 2 down to 1
+- around 70% in group 3 down to 2 or 1
+- and around 87% of people in group 4 dropping down
+- and around 3.3 points difference on average
 
 
+## Power analysis
 
-start <- Sys.time()
+Based on the above I run a power analysis with effect sizes of 0.1, 0.25 and 0.5, assuming that an effect size of 1 is unlikely.
+
+The code below runs the analysis and saves the result to disk. 1000 simulations took around 22 minutes.
+
+```{r, eval = FALSE}
 
 res <- 
 tidyr::crossing(
@@ -246,6 +277,20 @@ saveRDS(res,
         here::here("results",
                    "soda-power-analysis_1000.rds"))
 
+```
+
+The results of the power analysis are presented below. A horizontal line is placed on the graph at power of 0.8. It calculates achieved N as a combination of the sample size and the proportion of missing cases.
+
+An effect size of 0.5 could be detected with power larger than 0.8 in the smallest combination of N and largest proportion missing (500 and 11% - 55 cases.)
+
+For an effect size of -0.25 it took until an achieved N of 200 to reach a power of 0.8.
+
+Effect size of -0.1 never achieved a power of 0.8 in these simulations.
+
+```{r}
+
+res <- readRDS(here::here("results",
+                          "soda-power-analysis_1000.rds"))
 
 res |> 
   unnest(res) |> 
@@ -258,24 +303,10 @@ res |>
              colour = factor(effect_size))) +
   geom_hline(yintercept = 0.8) +
   geom_point(aes(size = factor(study_n))) +
-  geom_line(aes(group = interaction(effect_size)))
-  
-  
-end <- Sys.time()
+  geom_line(aes(group = effect_size)) +
+  labs(x = "Achieved N",
+       y = "Power",
+       colour = "Effect size",
+       size = "Study N")
 
-end - start
-
-res <- readRDS(here::here("results",
-                          "soda-power-analysis_1000.rds"))
-
-res |> 
-  unnest(res) |> 
-  group_by(effect_size, miss_prop, study_n) |> 
-  summarise(power = weighted.mean(signif, n)) |> 
-  ungroup() |> 
-  mutate(achieved_n = study_n * miss_prop) |> 
-  filter(achieved_n == 250)
-
-# 22 mins for 1000 sims
-
-# 4 mins for 200 sims
+```
